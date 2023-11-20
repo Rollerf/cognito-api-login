@@ -1,0 +1,12 @@
+{
+    "name": "cognito-api-login",
+    "main": "index.ts",
+    "devDependencies": {
+        "@types/node": "^16"
+    },
+    "dependencies": {
+        "@pulumi/aws": "^6.8.0",
+        "@pulumi/aws-apigateway": "^2.0.0-alpha.1",
+        "@pulumi/pulumi": "^3.0.0"
+    }
+}
