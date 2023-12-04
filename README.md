@@ -40,44 +40,31 @@ For Pulumi examples, we typically start by creating a directory and changing int
     pulumi up
     ```
 
-### Step 2: Test your API
-1. Create a random password
-
-    ```bash
-    PASSWORD=$(aws secretsmanager get-random-password --require-each-included-type --password-length 10 | jq -r .RandomPassword)
-    ```
-
-2. Create a user
-
-    ```bash
-    aws cognito-idp sign-up --region $(pulumi config get aws:region) --client-id $(pulumi stack output userPoolClientId) --username "test@domain.example" --password "$PASSWORD"
-    ```
-
-3. Confirm the user's account
-
-    ```bash
-    aws cognito-idp admin-confirm-sign-up --region $(pulumi config get aws:region) --user-pool-id $(pulumi stack output userPoolId) --username "test@domain.example"
-    ```
-
-4. Authenticate to create a new session:
-
-    ```bash
-    TOKEN=$(aws cognito-idp admin-initiate-auth --region $(pulumi config get aws:region) --user-pool-id $(pulumi stack output userPoolId) --client-id $(pulumi stack output userPoolClientId) --auth-flow ADMIN_NO_SRP_AUTH --auth-parameters "{\"USERNAME\":\"test@domain.example\",\"PASSWORD\":\"$PASSWORD\"}")
-    ```
-
-5. Perform authenticated request
-
-    ```bash
-    $ curl -w '\n' -H "Authorization: $(echo $TOKEN | jq '.AuthenticationResult.IdToken' -r)" "$(pulumi stack output url)cognito-authorized"
-    Hello, API Gateway!
-    ```
+### Step 2: Test your API in Postman
+1. Go to AWS Console -> API Gateway -> Select your API -> Stages -> Select your stage -> Stage Actions -> Export.
+![AWS Console](image.png)
+2. Import the file in Postman
+3. Configure the authetication in Postman:
+- Type: OAuth 2.0
+- Add authorization data to: Request Headers
+- Token Name: token
+- Grant Type: Authorization Code
+- Callback URL: URL defined in user pool client
+- Auth URL: Auth URL from the output of command pulumi up
+- Access Token URL: Is similar to Auth URL but with /oauth2/token instead of /login
+- Client ID: Client ID from the output of command pulumi up
+- Client Secret: From AWS Console -> Cognito
+- Scope: email
+- State: empty
+- Client Authentication: Send as Basic Auth header
+4. Create a user from Cognito UI. Get new access token -> Sing up and follow the steps
+5. Test API with Authorization header: Bearer {access_token} and without it to see the difference
 
 Fetch and review the logs from the Lambda executions:
 
 ```bash
 pulumi logs
 ```
-
 ## Clean Up
 
 Once you're finished experimenting, you can destroy your stack and remove it to avoid incurring any additional cost:
@@ -89,8 +76,9 @@ pulumi stack rm
 
 ## Summary
 
-In this tutorial, you deployed an API with different route configurations. Now you can use these patterns to build real APIs which connect to other services.
+In this tutorial, you deployed an API with authorization code flow.
 
 ## References
-
-- Completed tutorial could be found [here](https://www.pulumi.com/registry/packages/aws-apigateway/how-to-guides/aws-apigateway-ts-routes/)
+- [Athorization code flow explanation](https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow)
+- [Pulumi offcial documentation](https://www.pulumi.com/registry/packages/aws/api-docs/)
+- [Reference pulumi tutorial](https://www.pulumi.com/registry/packages/aws-apigateway/how-to-guides/aws-apigateway-ts-routes/)
