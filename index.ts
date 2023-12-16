@@ -2,6 +2,9 @@ import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 import { helloHandler } from "./helloHandler";
 
+// Get config
+const config = new pulumi.Config();
+
 // Create a Cognito User Pool of authorized users
 const userPool = new aws.cognito.UserPool("user-pool", {
     usernameAttributes: ["email"],
@@ -17,6 +20,25 @@ const userPool = new aws.cognito.UserPool("user-pool", {
     emailVerificationMessage: "Please click the link below to verify your email address: {####}",
     emailVerificationSubject: "Verify Your Email for Our Awesome App",
 });
+
+// Google identity provider configuration
+const googleProvider = new aws.cognito.IdentityProvider("google", {
+    providerName: "Google",
+    userPoolId: userPool.id,
+    providerType: "Google",
+    providerDetails: {
+        // The following need to be obtained from your Google Developer Console:
+        client_id: config.requireSecret("google_idp_clientId"),
+        client_secret: config.requireSecret("google_idp_secret"),
+        // The "authorize_scopes" can be adjusted based on the required permissions.
+        authorize_scopes: "email openid",
+    },
+    attributeMapping: {
+        email: "email",
+        username: "sub"
+    },
+}, { dependsOn: [userPool] });
+
 const userPoolClient = new aws.cognito.UserPoolClient("user-pool-client", {
     userPoolId: userPool.id,
     explicitAuthFlows: ["ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"],
@@ -26,9 +48,9 @@ const userPoolClient = new aws.cognito.UserPoolClient("user-pool-client", {
     callbackUrls: ["http://localhost:3000/", "https://www.example.com"],
     defaultRedirectUri: "https://www.example.com",
     generateSecret: true,
-    supportedIdentityProviders: ["COGNITO"],
-    logoutUrls: ["http://localhost:3000/", "https://www.example.com"]
-});
+    supportedIdentityProviders: ["COGNITO", "Google"],
+    logoutUrls: ["http://localhost:3000/logout", "https://www.example.com/logout"]
+}, { dependsOn: [googleProvider]});
 
 // Create a user pool domain
 const userPoolDomain = new aws.cognito.UserPoolDomain("cognito-domain", {
