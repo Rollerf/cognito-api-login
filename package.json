@@ -5,6 +5,7 @@
         "@types/node": "^16"
     },
     "dependencies": {
+        "@aws-sdk/client-cognito-identity-provider": "^3.478.0",
         "@pulumi/aws": "^6.8.0",
         "@pulumi/pulumi": "^3.0.0"
     }
