@@ -61,7 +61,7 @@ export const userPoolDomain = new aws.cognito.UserPoolDomain("cognito-domain", {
     userPoolId: userPool.id,
 }, { deleteBeforeReplace: true, dependsOn: [userPool] });
 
-// // IAM role for the Lambda function
+// IAM role for the Lambda function
 const lambdaRole = new aws.iam.Role("lambdaRole", {
     assumeRolePolicy: {
         Version: "2012-10-17",
@@ -88,13 +88,19 @@ const lambdaCognitoPolicy = new aws.iam.Policy("lambdaCognitoPolicy", {
     },
 });
 
-//TODO: Probably I need this code
-
 // Attach the policy to the Lambda IAM role
 new aws.iam.RolePolicyAttachment("lambdaRolePolicyAttachment", {
     role: lambdaRole,
     policyArn: lambdaCognitoPolicy.arn,
 }, { dependsOn: [lambdaCognitoPolicy, lambdaRole] });
+
+// Grant the Cognito User Pool permission to invoke the Lambda function
+new aws.lambda.Permission("cognitoPermission", {
+    action: "lambda:InvokeFunction",
+    function: checkEmailHandler,
+    principal: "cognito-idp.amazonaws.com",
+    sourceArn: userPool.arn
+});
 
 // // Create the Lambda function
 // const emailCheckerLambda = new aws.lambda.Function("emailCheckerLambda", {
@@ -114,11 +120,3 @@ new aws.iam.RolePolicyAttachment("lambdaRolePolicyAttachment", {
 //         preSignUp: emailCheckerLambda.arn
 //     },
 // }, { dependsOn: [emailCheckerLambda] }); // Ensure Lambda is created before assigning to Cognito trigger
-
-// Grant the Cognito User Pool permission to invoke the Lambda function
-new aws.lambda.Permission("cognitoPermission", {
-    action: "lambda:InvokeFunction",
-    function: checkEmailHandler,
-    principal: "cognito-idp.amazonaws.com",
-    sourceArn: userPool.arn
-});

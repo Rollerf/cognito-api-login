@@ -1,28 +1,35 @@
 import * as aws from "@pulumi/aws";
-import { CognitoIdentityProvider } from "@aws-sdk/client-cognito-identity-provider";
+import { CognitoIdentityProvider, ListUsersCommand } from "@aws-sdk/client-cognito-identity-provider";
+import { PreSignUpTriggerEvent } from "aws-lambda";
 
 export const checkEmailHandler = new aws.lambda.CallbackFunction("check-email-handler", {
-  callback: async (event, context) => {
-    console.log(JSON.stringify(event));
+  callback: async (event: PreSignUpTriggerEvent) => {
+    console.log(event.userPoolId);
+    console.log(event.request.userAttributes.email);
 
     try {
       // Create a new Cognito service object
-      const cognitoIdServiceProvider = new CognitoIdentityProvider();
+      const cognitoIdentityProvider = new CognitoIdentityProvider();
       const params = {
-        UserPoolId: process.env.USER_POOL_ID,
-        Username: JSON.parse((event as any).body).email,
+        UserPoolId: event.userPoolId,
+        AttributesToGet: ["email"],
+        Limit: 1,
+        Filter: `email = "${event.request.userAttributes.email}"`
       };
 
-      const users = await cognitoIdServiceProvider.listUsers(params);
+      const command = new ListUsersCommand(params);
+      const response = await cognitoIdentityProvider.send(command);
 
-      if (users.Users && users.Users.length > 1) {
-        return event;
+      if (response.Users && response.Users.length > 0) {
+        console.error("Users: " + JSON.stringify(response.Users));
+        throw new Error("User already exists");
       }
 
-      throw new Error("User already exists");
+      return event;
+
     } catch (error) {
       console.error(error);
-      throw new Error("Error " + error);
+      throw new Error("" + error);
     }
   }
 });
