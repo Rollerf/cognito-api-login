@@ -4,7 +4,8 @@ import * as aws from "@pulumi/aws";
 
 // Create a Lambda function to respond to HTTP requests
 export const helloHandler = new aws.lambda.CallbackFunction("hello-handler", {
-    callback: async (event, context) => {
+    runtime: aws.lambda.Runtime.NodeJS18dX,
+    callback: async (event) => {
         console.log(JSON.stringify(event));
         return {
             statusCode: 200,

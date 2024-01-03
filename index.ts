@@ -1,9 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
-import { userPoolClient, userPoolDomain} from "./stack/CognitoStack";
+import { userPoolClient, userPoolDomain } from "./stack/CognitoStack";
 import { deployment, api } from "./stack/ApiStack";
-// Get config
-const config = new pulumi.Config();
 
 //Export variables
 export const url =

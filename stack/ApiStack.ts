@@ -3,24 +3,30 @@ import * as pulumi from "@pulumi/pulumi";
 import { helloHandler } from "../lambdas/helloHandler";
 import { userPool } from "./CognitoStack";
 
-export const api = new aws.apigateway.RestApi("api", {});
+// Get config
+const config = new pulumi.Config();
+
+export const api = new aws.apigateway.RestApi(config.require("restApiName"), {});
 
 // Add permissions for the Lambda function to be called by API Gateway
-const lambdaPermission = new aws.lambda.Permission("lambdaPermission", {
-    action: "lambda:InvokeFunction",
-    principal: "apigateway.amazonaws.com",
-    function: helloHandler.arn,
-    sourceArn: pulumi.interpolate`${api.executionArn}/*/*`,
-}, { dependsOn: [helloHandler, api] });
+const lambdaPermission = new aws.lambda.Permission(
+    config.require("lambdaPermissionInvocationFromApi"),
+    {
+        action: "lambda:InvokeFunction",
+        principal: "apigateway.amazonaws.com",
+        function: helloHandler.arn,
+        sourceArn: pulumi.interpolate`${api.executionArn}/*/*`,
+    }, { dependsOn: [helloHandler, api] });
 
-const resource = new aws.apigateway.Resource("myResource", {
-    restApi: api.id,
-    parentId: api.rootResourceId,
-    pathPart: "cognito-authorized",
-}, { dependsOn: [api] });
+const resource = new aws.apigateway.Resource(config.require("congnitoAuthorizerResource"),
+    {
+        restApi: api.id,
+        parentId: api.rootResourceId,
+        pathPart: config.require("congnitoAuthorizerResourcePath"),
+    }, { dependsOn: [api] });
 
 // Create authorizer for the API
-const restAuthorizer = new aws.apigateway.Authorizer("rest-authorizer", {
+const restAuthorizer = new aws.apigateway.Authorizer(config.require("apiRestAuthorizer"), {
     restApi: api.id,
     type: "COGNITO_USER_POOLS",
     providerArns: [userPool.arn],

@@ -56,13 +56,14 @@ export const userPoolClient = new aws.cognito.UserPoolClient("user-pool-client",
 }, { dependsOn: [googleProvider] });
 
 // Create a user pool domain
-export const userPoolDomain = new aws.cognito.UserPoolDomain("cognito-domain", {
-    domain: "my-test-domain",
+export const userPoolDomain = new aws.cognito.UserPoolDomain(config.require("cognitoPoolDomain"), {
+    domain: config.require("cognitoPoolDomainName"),
     userPoolId: userPool.id,
-}, { deleteBeforeReplace: true, dependsOn: [userPool] });
+},
+    { deleteBeforeReplace: true, dependsOn: [userPool] });
 
 // IAM role for the Lambda function
-const lambdaRole = new aws.iam.Role("lambdaRole", {
+const lambdaRole = new aws.iam.Role(config.require("lambdaCognitoRole"), {
     assumeRolePolicy: {
         Version: "2012-10-17",
         Statement: [{
@@ -75,48 +76,50 @@ const lambdaRole = new aws.iam.Role("lambdaRole", {
     },
 });
 
-const lambdaCognitoPolicy = new aws.iam.Policy("lambdaCognitoPolicy", {
-    policy: {
-        Version: "2012-10-17",
-        Statement: [{
-            Action: [
-                "cognito-idp:ListUsers",
-            ],
-            Resource: userPool.arn,
-            Effect: "Allow",
-        }],
-    },
-});
+const lambdaCognitoPolicy = new aws.iam.Policy(config.require("lambdaCognitoPolicy"),
+    {
+        policy: {
+            Version: "2012-10-17",
+            Statement: [{
+                Action: [
+                    "cognito-idp:ListUsers",
+                ],
+                Resource: userPool.arn,
+                Effect: "Allow",
+            }],
+        },
+    });
 
 // Attach the policy to the Lambda IAM role
-new aws.iam.RolePolicyAttachment("lambdaRolePolicyAttachment", {
+new aws.iam.RolePolicyAttachment(config.require("lambdaCognitoRolePolicyAttachment"), {
     role: lambdaRole,
     policyArn: lambdaCognitoPolicy.arn,
 }, { dependsOn: [lambdaCognitoPolicy, lambdaRole] });
 
 // Grant the Cognito User Pool permission to invoke the Lambda function
-new aws.lambda.Permission("cognitoPermission", {
-    action: "lambda:InvokeFunction",
-    function: checkEmailHandler,
-    principal: "cognito-idp.amazonaws.com",
-    sourceArn: userPool.arn
-});
+new aws.lambda.Permission(config.require("cognitoPermissionForLambda"),
+    {
+        action: "lambda:InvokeFunction",
+        function: checkEmailHandler,
+        principal: "cognito-idp.amazonaws.com",
+        sourceArn: userPool.arn
+    });
 
-// // Create the Lambda function
-// const emailCheckerLambda = new aws.lambda.Function("emailCheckerLambda", {
-//     role: lambdaRole.arn,
-//     handler: checkEmailExistsHandler.arn, // Update with the actual handler location
-//     runtime: aws.lambda.Runtime.NodeJS18dX,
-//     environment: {
-//         variables: {
-//             USER_POOL_ID: userPool.id
-//         },
-//     },
-// });
+//TODO: Do something to get the Lambda function name
+// Create a CloudWatch Log Group associated with the Lambda function.
+const logGroup = new aws.cloudwatch.LogGroup(
+    config.require("cognitoCloudWatchLogGroup"),
+    {
+        // Set the retention policy to 7 days.
+        retentionInDays: 30,
+    },
+    { dependsOn: [checkEmailHandler] });
 
-// // Trigger the Lambda function upon a pre sign-up event in Cognito User Pool
-// const userPoolTrigger = new aws.cognito.UserPool("myUserPool", {
-//     lambdaConfig: {
-//         preSignUp: emailCheckerLambda.arn
-//     },
-// }, { dependsOn: [emailCheckerLambda] }); // Ensure Lambda is created before assigning to Cognito trigger
+// Specify the Lambda function to attach the Log Group.
+new aws.lambda.Permission(config.require("cognitoCloudWatchLogGroup"),
+    {
+        action: "lambda:InvokeFunction",
+        function: checkEmailHandler,
+        principal: "logs.amazonaws.com",
+        sourceArn: logGroup.arn,
+    });

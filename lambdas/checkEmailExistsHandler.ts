@@ -1,12 +1,18 @@
 import * as aws from "@pulumi/aws";
 import { CognitoIdentityProvider, ListUsersCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { PreSignUpTriggerEvent } from "aws-lambda";
+import * as pulumi from "@pulumi/pulumi";
 
-export const checkEmailHandler = new aws.lambda.CallbackFunction("check-email-handler", {
+// Create a Pulumi configuration object
+const config = new pulumi.Config();
+
+// Read the Lambda function name from the configuration
+const lambdaFunctionName = config.require("checkEmailExistsHandler");
+
+export const checkEmailHandler = new aws.lambda.CallbackFunction(
+  lambdaFunctionName, {
+  runtime: aws.lambda.Runtime.NodeJS18dX,
   callback: async (event: PreSignUpTriggerEvent) => {
-    console.log(event.userPoolId);
-    console.log(event.request.userAttributes.email);
-
     try {
       // Create a new Cognito service object
       const cognitoIdentityProvider = new CognitoIdentityProvider();

@@ -1,5 +1,25 @@
 config:
   aws:region: eu-west-3
+  cognito-api-login-code:checkEmailExistsHandler: check-email-handler-dev
+  cognito-api-login-code:lambdaCognitoRolePolicyAttachment: lambdaRoleCognitoPolicyAttachment-dev
+  cognito-api-login-code:lambdaCognitoPolicy: lambdaCognitoPolicy-dev
+  cognito-api-login-code:lambdaCognitoRole: lambdaCognitoRole-dev
+  cognito-api-login-code:cognitoPoolDomain: cognitoPoolDomain-dev
+  cognito-api-login-code:cognitoPoolDomainName: my-test-domain-dev
+  cognito-api-login-code:cognitoPermissionForLambda: cognitoPermission-dev
+  cognito-api-login-code:congnitoLambdaLogPermission: cognitoLambdaLogPermission-dev
+  cognito-api-login-code:cognitoCloudWatchLogGroup: cognitoCloudWatchLogGroup-dev
+  cognito-api-login-code:restApiName: api-dev
+  cognito-api-login-code:lambdaPermissionInvocationFromApi: lambdaHelloPermissionInvocationFromApi-dev
+  cognito-api-login-code:apiRestAuthorizer: apiRestAuthorizer-dev
+  cognito-api-login-code:congnitoAuthorizerResource: cognitoAuthorizerResource-dev
+  cognito-api-login-code:congnitoAuthorizerResourcePath: cognito-authorized
+
+
+
+
+
+
   cognito-api-login-code:google_idp_clientId:
     secure: AAABAERpyTzDw/byJxtgWCiIsqym+F1sm+qyBYK8R9wEajawH0hZbvzWMt6I9q4UQ17EOvZY9HQMCC4VyIm9IygwEScQyMyX/k2/KgFXfgQVfgZ26TS/QUXYXrHd7cWBjjhTrwu1UeE=
   cognito-api-login-code:google_idp_secret:
