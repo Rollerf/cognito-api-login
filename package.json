@@ -2,13 +2,13 @@
     "name": "cognito-api-login",
     "main": "index.ts",
     "devDependencies": {
+        "@types/aws-lambda": "^8.10.130",
         "@types/node": "^16"
     },
     "dependencies": {
+        "@aws-sdk/client-cognito-identity-provider": "^3.478.0",
         "@pulumi/aws": "^6.8.0",
-        "@pulumi/aws-apigateway": "^2.0.0-alpha.1",
-        "@pulumi/aws-native": "^0.86.0",
-        "@pulumi/awsx": "^2.3.0",
-        "@pulumi/pulumi": "^3.0.0"
+        "@pulumi/pulumi": "^3.0.0",
+        "aws-lambda": "^1.0.7"
     }
 }
