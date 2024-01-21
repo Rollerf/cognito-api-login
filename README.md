@@ -9,6 +9,27 @@ When you're finished, you'll be familiar with how to configure routes in API Gat
 1. [Install Pulumi](https://www.pulumi.com/docs/get-started/install/)
 2. [Configure AWS Credentials](https://www.pulumi.com/docs/intro/cloud-providers/aws/setup/)
 3. [Install Node.js](https://www.pulumi.com/docs/intro/languages/javascript/)
+### Get Google Client ID and Secret
+#### Using GCP console:
+
+- Create a Google Account -> https://console.cloud.google.com
+
+- Create a project
+
+- Go to APIs && Services
+  
+- OAuth consent screen and fill the required fields
+  
+- In domain put "amazoncognito.com"
+  
+- Go to Credentials
+  
+- In Authorized JavaScript origins put your amazoncognito url
+  
+- In Authorized redirect URIs put your amazoncognitourl/oauth2/idpresponse
+
+#### References
+- I found this tutorial very useful -> https://www.youtube.com/watch?v=r1P_glQGvfo
 
 ## Deploy the App
 
