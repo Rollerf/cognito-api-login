@@ -5,6 +5,16 @@ import { Integration, Method } from "@pulumi/aws/apigateway";
 import { Permission } from "@pulumi/aws/lambda";
 
 export const createLambda = (definition: LambdaDefinition) => {
+    // IAM role for Lambda use dynamodb
+    const databaseRole = new aws.iam.Role(definition.handlerName + "-RoleForDatabase", {
+        assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({ Service: "lambda.amazonaws.com" }),
+    });
+
+    // IAM policy attachment for Lambda
+    const policy = new aws.iam.RolePolicyAttachment(definition.handlerName + "-PolicyForDatabase", {
+        role: databaseRole,
+        policyArn: definition.httpMethod == "GET" ? aws.iam.ManagedPolicy.AmazonDynamoDBReadOnlyAccess : aws.iam.ManagedPolicy.AmazonDynamoDBFullAccess
+    }, { dependsOn: [databaseRole] });
 
     // Create a Lambda function to respond to HTTP requests
     const handler = new aws.lambda.CallbackFunction(
@@ -12,7 +22,13 @@ export const createLambda = (definition: LambdaDefinition) => {
         runtime: aws.lambda.Runtime.NodeJS18dX,
         callback: definition.handler,
         timeout: definition.timeoutMins * 60,
-    });
+        role: databaseRole,
+        environment: {
+            variables: {
+                TABLE_NAME: definition.table.name,
+            },
+        },
+    }, { dependsOn: [policy] });
 
     // Add permissions for the Lambda function to be called by API Gateway
     const lambdaPermission = new Permission(
