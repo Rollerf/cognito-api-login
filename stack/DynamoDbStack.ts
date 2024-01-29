@@ -11,7 +11,7 @@ export const table = new aws.dynamodb.Table("cognito-api-login-db", {
         { name: "user_id", type: "S" },
         { name: "utm_source", type: "S" },
     ],
-    hashKey: "id",
+    hashKey: "user_id",
     rangeKey: "utm_source",
     billingMode: "PAY_PER_REQUEST"
 });
