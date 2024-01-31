@@ -4,6 +4,7 @@ import { LambdaDefinition } from "./types";
 import { helloHandler } from "../lambda-handlers/helloHandler";
 import { helloPostHandler } from "../lambda-handlers/helloPostHandler";
 import * as pulumi from "@pulumi/pulumi";
+import {table} from "./DynamoDbStack";
 
 const config = new pulumi.Config();
 
@@ -19,7 +20,8 @@ export const getLambdaDefinitions =
                 resource: resource,
                 httpMethod: "GET",
                 restAuthorizer: restAuthorizer,
-                timeoutMins: 1
+                timeoutMins: 1,
+                table: table
             },
             {
                 handlerName: "helloPostHandler-" + config.require("stageName"),
@@ -29,7 +31,8 @@ export const getLambdaDefinitions =
                 resource: resource,
                 httpMethod: "POST",
                 restAuthorizer: restAuthorizer,
-                timeoutMins: 1
+                timeoutMins: 1,
+                table: table
             }
         ]
     }

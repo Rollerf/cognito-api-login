@@ -5,6 +5,22 @@ import { Integration, Method } from "@pulumi/aws/apigateway";
 import { Permission } from "@pulumi/aws/lambda";
 
 export const createLambda = (definition: LambdaDefinition) => {
+    // IAM role for Lambda use dynamodb
+    const lambdaRole = new aws.iam.Role(definition.handlerName + "-RoleForLambda", {
+        assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({ Service: "lambda.amazonaws.com" }),
+    });
+
+    // IAM policy attachment for Lambda
+    const dynamoDbPolicy = new aws.iam.RolePolicyAttachment(definition.handlerName + "-PolicyForDatabase", {
+        role: lambdaRole,
+        policyArn: definition.httpMethod == "GET" ? aws.iam.ManagedPolicy.AmazonDynamoDBReadOnlyAccess : aws.iam.ManagedPolicy.AmazonDynamoDBFullAccess
+    }, { dependsOn: [lambdaRole] });
+
+    // IAM policy attachment for Lambda to CloudWatch
+    const cloudWatchPolicy = new aws.iam.RolePolicyAttachment(definition.handlerName + "-PolicyForCloudWatch", {
+        role: lambdaRole,
+        policyArn: aws.iam.ManagedPolicy.CloudWatchLogsFullAccess
+    }, { dependsOn: [lambdaRole] });
 
     // Create a Lambda function to respond to HTTP requests
     const handler = new aws.lambda.CallbackFunction(
@@ -12,7 +28,13 @@ export const createLambda = (definition: LambdaDefinition) => {
         runtime: aws.lambda.Runtime.NodeJS18dX,
         callback: definition.handler,
         timeout: definition.timeoutMins * 60,
-    });
+        role: lambdaRole,
+        environment: {
+            variables: {
+                TABLE_NAME: definition.table.name,
+            },
+        },
+    }, { dependsOn: [dynamoDbPolicy, cloudWatchPolicy] });
 
     // Add permissions for the Lambda function to be called by API Gateway
     const lambdaPermission = new Permission(
@@ -47,6 +69,7 @@ export const createLambda = (definition: LambdaDefinition) => {
             integrationHttpMethod: "POST",
         }, { dependsOn: [method] });
 
+
     // Create a CloudWatch Log Group associated with the Lambda function.
     const logGroup = new aws.cloudwatch.LogGroup(
         definition.handlerName + "-CloudWatchLogGroup",
@@ -57,13 +80,13 @@ export const createLambda = (definition: LambdaDefinition) => {
         { dependsOn: [handler] });
 
     // Specify the Lambda function to attach the Log Group.
-    new aws.lambda.Permission(definition.handlerName + "-CloudWatchLogGroup",
-        {
-            action: "lambda:InvokeFunction",
-            function: handler,
-            principal: "logs.amazonaws.com",
-            sourceArn: logGroup.arn,
-        }, { dependsOn: [logGroup] });
+    // new aws.lambda.Permission(definition.handlerName + "-CloudWatchLogGroup",
+    //     {
+    //         action: "lambda:InvokeFunction",
+    //         function: handler,
+    //         principal: "logs.amazonaws.com",
+    //         sourceArn: logGroup.arn,
+    //     }, { dependsOn: [logGroup] });
 
     return integration;
 }
