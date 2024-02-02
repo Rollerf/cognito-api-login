@@ -5,7 +5,6 @@ import { createLambda } from "./LambdaStack";
 import { getLambdaDefinitions } from "./LambdaConfig";
 
 const config = new pulumi.Config();
-const integrations: aws.apigateway.Integration[] = [];
 
 export const api = new aws.apigateway.RestApi("restApi-"
     + config.require("stageName"), {});
@@ -29,16 +28,12 @@ const restAuthorizer = new aws.apigateway.Authorizer("apiRestAuthorizer-"
 // Get Lambda definitions
 const lambdaDefinitions = getLambdaDefinitions(api, restAuthorizer, resource);
 
-// Create a Lambda function
-lambdaDefinitions.forEach(definition => {
-    integrations.push(createLambda(definition));
-});
-
-let lastIntegration: pulumi.Input<pulumi.Resource> = integrations[integrations.length - 1];
+const integrations = lambdaDefinitions.map(
+    definition => createLambda(definition));
 
 //Create a deployment of the API
 export const deployment = new aws.apigateway.Deployment("myRestApiDeployment"
     + config.require("stageName"), {
     restApi: api.id,
     stageName: config.require("stageName"),
-}, { dependsOn: [restAuthorizer, lastIntegration], ignoreChanges: ["triggers"] });
+}, { dependsOn: integrations, ignoreChanges: ["triggers"] });
