@@ -25,6 +25,13 @@ export const userPool = new aws.cognito.UserPool("user-pool-"
     }
 }, { dependsOn: [checkEmailHandler] });
 
+// Create a user pool domain
+export const userPoolDomain = new aws.cognito.UserPoolDomain("cognitoPoolDomain-"
+    + config.require("stageName"), {
+    domain: "auth-api-test-domain",
+    userPoolId: userPool.id,
+}, { deleteBeforeReplace: true, dependsOn: [userPool] });
+
 // Google identity provider configuration
 const googleProvider = new aws.cognito.IdentityProvider("googleIdentityProvider-"
     + config.require("stageName"), {
@@ -50,20 +57,12 @@ export const userPoolClient = new aws.cognito.UserPoolClient("userPoolClient-" +
     allowedOauthFlows: ["code"],
     allowedOauthFlowsUserPoolClient: true,
     allowedOauthScopes: ["email", "openid"],
-    callbackUrls: ["http://localhost:3000/", "https://www.example.com"],
+    callbackUrls: ["http://localhost:4200/"],
     defaultRedirectUri: "https://www.example.com",
-    generateSecret: true,
+    generateSecret: false,
     supportedIdentityProviders: ["COGNITO", "Google"],
-    logoutUrls: ["http://localhost:3000/logout", "https://www.example.com/logout"]
+    logoutUrls: ["http://localhost:4200/logout"]
 }, { dependsOn: [googleProvider] });
-
-// Create a user pool domain
-export const userPoolDomain = new aws.cognito.UserPoolDomain("cognitoPoolDomain-"
-    + config.require("stageName"), {
-    domain: "my-test-domain",
-    userPoolId: userPool.id,
-},
-    { deleteBeforeReplace: true, dependsOn: [userPool] });
 
 // IAM role for the Lambda function
 const lambdaRole = new aws.iam.Role("lambdaCognitoRole-"
